@@ -1,0 +1,153 @@
+(def layout WorldPlaneMarker (_entityId:number)
+	(scope
+		(var markerEntity:gfx = "$datahub.getEntity(_entityId)")
+
+		(event evMarkerShow)
+		(event evMarkerHide)
+		(event evUpdateRotation)
+
+		
+		(var timer:gfx = "$datahub.getSingleComponent(CC.timer)")
+		(macro GET_MARKER_ENTITY_COMPONENT 'ownSquadron')
+		(macro GET_MARKER_ENTITY_COMPONENT 'relation')
+		(macro GET_MARKER_ENTITY_COMPONENT 'distance')
+		(macro GET_MARKER_ENTITY_COMPONENT 'health')
+		(macro GET_MARKER_ENTITY_COMPONENT 'mapPosition')
+
+		
+		(macro ALT_VISION_SCOPE)
+
+		
+		(var distanceIndex:number = "distanceComponent ? distanceComponent.distanceIndex : DistanceType.NEAR" (event "distanceComponent.evDistanceIndexChanged"))
+		(var isSelf:bool = "relationComponent && relationComponent.value == SC.Battle.PLAYER_RELATION.SELF")
+		(var ownCarrierEntity:gfx = "$datahub.getSingleEntity(CC.aircarrier)")
+		(var activeSquadron:number = "ownCarrierEntity ? ownCarrierEntity.aircarrier.activeSquadron : -1" (event "ownCarrierEntity.aircarrier.evStateChanged"))
+		(var isControlledByPlayer:bool = "isSelf && ownSquadronComponent && ownSquadronComponent.id == activeSquadron")
+
+		
+		(dispatch evUpdateRotation args={} (event "timer.evFrequent") (bind enabled "isTactical && isControlledByPlayer"))
+		(var planeRotation:number = "mapPositionComponent ? radToGrad(mapPositionComponent.yaw) : 0" (event "evUpdateRotation"))
+		(var iconRotation:number = "isTactical && isControlledByPlayer ? planeRotation - 90 : 0") 
+
+		
+		(var isAlive:bool = "healthComponent && healthComponent.isAlive" (event "healthComponent.evIsAliveChanged"))
+
+		(var distanceType:number = "isTactical						? DistanceType.TACTICAL :
+									isFullAltVisionMode || isSelf	? DistanceType.NEAR
+																	: distanceIndex")
+
+		(var distanceItemVisibility:bool = "(!(isIn(distanceType, [DistanceType.TACTICAL, DistanceType.FARTHEST])) || isAdaptiveAltVisionMode) && !(isControlledByPlayer)")
+
+		(var healthBarItemVisible:bool = "((isAdaptiveAltVisionMode && distanceType <= DistanceType.FARTHEST) || (distanceType == DistanceType.NEAR)) && !(isControlledByPlayer)")
+		
+		(var farAdaptiveAltVisionMode:bool = "isAdaptiveAltVisionMode && distanceType <= DistanceType.FAR")
+
+		(var ownerNameItemVisibility:bool = "distanceType != DistanceType.TACTICAL && farAdaptiveAltVisionMode && !(isControlledByPlayer) && !(isSelf)")
+		(var ownerShipNameItemVisibility:bool = "((distanceType != DistanceType.TACTICAL && farAdaptiveAltVisionMode) || (distanceType == DistanceType.TACTICAL && isAdaptiveAltVisionMode)) && !(isControlledByPlayer) && !(isSelf)")
+
+		#modded
+		(var numericHealthItemVisibility:bool = "distanceType != DistanceType.TACTICAL && farAdaptiveAltVisionMode")
+		#
+
+		(var planeIconScaled:bool = "(distanceType >= DistanceType.FAR && !(isAdaptiveAltVisionMode)) || (distanceType == DistanceType.FARTHEST && !(isFullAltVisionMode))")
+		(macro SCOPE_HIGHLIGHT_MARKER_ON_WORLD_MOUSE_OVER)
+	)
+
+	
+
+	(dispatch evMarkerShow args="{}" on='addedToStage')
+
+	(style
+		(width = 0) (height = 0)
+		(bind align "isTactical ? center|middle
+								: center|bottom")
+	)
+	
+	(controller $Animation
+		(bindcall play	duration="DEATH_ANIMATION_DURATION"
+						from="{alpha: 0}"
+						to="{alpha: 1}"
+						init=false
+						watch=false
+						action="killAll"
+						reverse="!(isAlive)"
+						(bind trigger "isAlive")
+		)
+	)
+
+	
+	(block
+		(style
+			(width = 0) (zindex = 0)
+			(align = "center|bottom")
+			(bind position "isTactical ? absolute : flow")
+			(bind bottom "isTactical ? SHIP_ICON_SIZE.HEIGHT : 0")
+		)
+
+		(block
+			(element TargetAnimationItem "_entityId"
+				(style
+					(position = "absolute")
+					(top = 0) (left = 50%)
+				)
+			)
+		)
+
+		(element PlaneOwnerShipNameItem "_entityId"
+			(bind visible "ownerShipNameItemVisibility")
+		)
+
+		#numeric health
+		(element PlaneMarkerHealthNumeric "_entityId"
+			(bind visible "numericHealthItemVisibility")
+		)
+		#
+	)
+
+	
+	(block
+		(macro EFFECT_HIGHLIGHT_MARKER_ON_MOUSE_OVER)
+		(element PlaneMarkerIconItem "_entityId" "iconRotation"
+			(macro BIND_SCALE "planeIconScaled ? 0.7 : 1")
+		)
+	)
+
+	(element PlaneOwnerNameItem "_entityId"
+		(bind visible "ownerNameItemVisibility")
+	)
+
+	
+	(element PlaneMarkerHealthBarItem 
+		_entityId="_entityId"
+		(bind visible "healthBarItemVisible")
+	)
+
+	
+	(block
+		(style
+			(width = 0)
+			(align = "center|top")
+			(bind position "isTactical ? absolute : flow")
+			(bind top "isTactical ? SHIP_ICON_SIZE.HEIGHT : 0")
+		)
+		(element DistanceItem "_entityId"
+			(bind visible "distanceItemVisibility")
+		)	
+	)
+)
+
+#numeric health
+(def element PlaneMarkerHealthNumeric (_entityId:number) layout=true
+	(scope
+		(var markerEntity:gfx = "$datahub.getEntity(_entityId)")
+
+		(macro GET_MARKER_ENTITY_COMPONENT 'squadron')
+		(var healthValue:str = "squadronComponent ? squadronComponent.currentHP : 0" (event "squadronComponent.evCurrentHPChanged"))
+	)
+
+	(controller $Instance renderer='SimpleMarkerTextItem'
+		(bind enabled "healthValue != ''")
+		(args "healthValue")
+	)
+)
+#
