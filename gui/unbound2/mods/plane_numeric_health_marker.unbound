@@ -1,7 +1,5 @@
-(def layout WorldPlaneMarker (_entityId:number)
+(def layout WorldPlaneMarker (_markerEntity:gfx)
 	(scope
-		(var markerEntity:gfx = "$datahub.getEntity(_entityId)")
-
 		(event evMarkerShow)
 		(event evMarkerHide)
 		(event evUpdateRotation)
@@ -85,7 +83,7 @@
 		)
 
 		(block
-			(element TargetAnimationItem "_entityId"
+			(element TargetAnimationItem "_markerEntity"
 				(style
 					(position = "absolute")
 					(top = 0) (left = 50%)
@@ -93,12 +91,12 @@
 			)
 		)
 
-		(element PlaneOwnerShipNameItem "_entityId"
+		(element PlaneOwnerShipNameItem "_markerEntity"
 			(bind visible "ownerShipNameItemVisibility")
 		)
 
 		#numeric health
-		(element PlaneMarkerHealthNumeric "_entityId"
+		(element PlaneMarkerHealthNumeric "_markerEntity"
 			(bind visible "numericHealthItemVisibility")
 		)
 		#
@@ -107,18 +105,18 @@
 	
 	(block
 		(macro EFFECT_HIGHLIGHT_MARKER_ON_MOUSE_OVER)
-		(element PlaneMarkerIconItem "_entityId" "iconRotation"
+		(element PlaneMarkerIconItem "_markerEntity" "iconRotation"
 			(macro BIND_SCALE "planeIconScaled ? 0.7 : 1")
 		)
 	)
 
-	(element PlaneOwnerNameItem "_entityId"
+	(element PlaneOwnerNameItem "_markerEntity"
 		(bind visible "ownerNameItemVisibility")
 	)
 
 	
 	(element PlaneMarkerHealthBarItem 
-		_entityId="_entityId"
+		_markerEntity="_markerEntity"
 		(bind visible "healthBarItemVisible")
 	)
 
@@ -130,17 +128,15 @@
 			(bind position "isTactical ? absolute : flow")
 			(bind top "isTactical ? SHIP_ICON_SIZE.HEIGHT : 0")
 		)
-		(element DistanceItem "_entityId"
+		(element DistanceItem "_markerEntity"
 			(bind visible "distanceItemVisibility")
 		)	
 	)
 )
 
 #numeric health
-(def element PlaneMarkerHealthNumeric (_entityId:number) layout=true
+(def element PlaneMarkerHealthNumeric (_markerEntity:gfx) layout=true
 	(scope
-		(var markerEntity:gfx = "$datahub.getEntity(_entityId)")
-
 		(macro GET_MARKER_ENTITY_COMPONENT 'squadron')
 		(var healthValue:str = "squadronComponent ? squadronComponent.currentHP : 0" (event "squadronComponent.evCurrentHPChanged"))
 	)
