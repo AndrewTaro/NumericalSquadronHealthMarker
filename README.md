@@ -1,6 +1,5 @@
 # Numerical HP on Squadron Marker
-This modification counts the time since a ship is last spotted on the minimap.
-The timer is visible when the Alt-key is pressed.  
+This mod shows numerical health points on the squadron's icon.  
 The mod is officially checked and approved by WG, thus is safe to use.
 
 # Overview
